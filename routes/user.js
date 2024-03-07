@@ -5,9 +5,7 @@ const User = require("../models/user");
 const cookieToken = require("../utils/cookieToken");
 
 router.post("/signup", upload.single("Image"), async (req, res) => {
-    console.log(req.body)
     try {
-        // Check if file is uploaded
         if (!req.file || !req.body.Name || !req.body.Email || !req.body.Password) {
             return res.status(400).json({ message: "Incomplete Data" });
         }
@@ -15,7 +13,6 @@ router.post("/signup", upload.single("Image"), async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: "User already exists!" });
         }
-        // Upload image to Cloudinary
         const result = await cloudinary.uploader.upload(req.file.path);
 
 
@@ -35,7 +32,6 @@ router.post("/signup", upload.single("Image"), async (req, res) => {
     }
 });
 router.post("/signin", async (req, res) => {
-    console.log(req.body)
     try {
         if (!req.body.Email || !req.body.Password) {
             return res.status(400).json({ message: "Incomplete Data" });

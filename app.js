@@ -6,6 +6,9 @@ require('dotenv').config();
 const app = express();
 const bodyParser = require("body-parser");
 const userRoutes = require("./routes/user");
+const clientRoutes = require("./routes/client");
+
+
 
 app.use(cors());
 
@@ -27,6 +30,7 @@ db.once('open', () => console.log('Connected to MongoDB'));
 app.use(bodyParser.urlencoded({extended: false}))
 
 app.use('/api/user', userRoutes);
+app.use('/api', clientRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
