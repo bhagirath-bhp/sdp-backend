@@ -7,6 +7,8 @@ const app = express();
 const bodyParser = require("body-parser");
 const userRoutes = require("./routes/user");
 const clientRoutes = require("./routes/client");
+const productRoutes = require("./routes/product")
+const taskRoutes = require("./routes/task");
 
 
 
@@ -31,6 +33,8 @@ app.use(bodyParser.urlencoded({extended: false}))
 
 app.use('/api/user', userRoutes);
 app.use('/api', clientRoutes);
+app.use('/api', productRoutes);
+app.use('/api/task', taskRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
