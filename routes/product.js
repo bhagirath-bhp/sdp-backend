@@ -69,9 +69,9 @@ router.get("/product/search", async (req, res) => {
     try {
         const { name } = req.query;
         const result = await Product.find({
-            name: { $regex: new RegExp(name, 'i') }
+            pname: { $regex: new RegExp(name, 'i') }
         });
-
+        console.log(name)
         return res.status(200).json(result);
     } catch (error) {
         console.error(error);
