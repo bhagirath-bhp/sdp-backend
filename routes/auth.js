@@ -4,7 +4,6 @@ const User = require('../models/user')
 exports.isLoggedIn = async(req,res,next) => {
     try {
         const token = req.headers['authorization'];
-        console.log(token)
         if (!token) {
             res.status(401).json({error: "unauthorized access"});
             // return next(new Error("No token found"));

@@ -4,13 +4,12 @@ const Order = require("../models/order");
 router.post("/add", async (req, res) => {
   try {
     // const { bname, clientId, userId, productSet} = req.body;
-    const { bname, products} = req.body;
-    console.log(req.body)
+    const { bname, products, userId, totalAmount } = req.body;
     // if (!bname || !clientId || !userId || !productSet) {
-    if (!bname || !products) {
+    if (!userId || !bname || !products || !totalAmount) {
       return res.status(400).json({ message: "Incomplete Data" });
     }
-    
+
     // const order = new Order({
     //   oname: oname,
     //   clientId: clientId,
@@ -19,7 +18,9 @@ router.post("/add", async (req, res) => {
     // });
     const order = new Order({
       bname: bname,
+      userId: userId,
       products: products,
+      totalAmount: totalAmount
     });
 
     await order.save(); // Save the order to the database
@@ -33,17 +34,20 @@ router.post("/add", async (req, res) => {
 
 
 
-router.get("/all", async (req, res) => {
+router.get("/all/:userId", async (req, res) => {
   try {
-      let orderFrame = await Order.find({})
-      // .skip((pageNumber - 1) * pageSize)
-      // .limit(pageSize)
+    const {userId} = req.params;
+    let orderFrame = await Order.find({ userId: userId })
+    // .skip((pageNumber - 1) * pageSize)
+    // .limit(pageSize)
 
-      if (orderFrame) {
-          res.status(200).send(orderFrame);
-      }
+    if (orderFrame.length > 0) {
+      res.status(200).json(orderFrame);
+    } else {
+      res.status(404).json({ message: "No orders found for the given userId" });
+    }
   } catch (error) {
-      console.log(error)
+    console.log(error)
   }
 })
 

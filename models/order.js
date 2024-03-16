@@ -1,9 +1,10 @@
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema({
-    bname: String,
-    clientId: String,
     userId: String,
+    bname: String,
+    totalAmount: Number,
+    // clientId: String,
     products: [{
         pname: String,
         pid: String,
