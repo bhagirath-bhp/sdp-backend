@@ -34,8 +34,8 @@ app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
 
 app.use('/api/user', userRoutes);
-app.use('/api', isLoggedIn, clientRoutes);
-app.use('/api', isLoggedIn, productRoutes);
+app.use('/api/client', isLoggedIn, clientRoutes);
+app.use('/api/product', isLoggedIn, productRoutes);
 app.use('/api/task', isLoggedIn, taskRoutes);
 app.use('/api/order', isLoggedIn, orderRoutes);
 

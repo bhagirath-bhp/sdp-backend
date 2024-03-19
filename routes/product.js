@@ -2,9 +2,11 @@ const router = require("express").Router();
 const cloudinary = require("../utils/cloudinary");
 const upload = require("../utils/multer");
 const Product = require("../models/product");
+const Analyse = require("../models/analyse");
 const cookieToken = require("../utils/cookieToken");
 
-router.post("/product/add", upload.single("image"), async (req, res) => {
+router.post("/add", upload.single("image"), async (req, res) => {
+    const timeNow = new Date()
     console.log(req.body)
     try {
         if (!req.file || req.userId || !req.body.pname || !req.body.price || !req.body.producer  || !req.body.quantity) {
@@ -19,13 +21,24 @@ router.post("/product/add", upload.single("image"), async (req, res) => {
             price: req.body.price,
             producer: req.body.producer,
             quantity: req.body.quantity,
-            lastUpdated: new Date(),
+            lastUpdated: timeNow,
             imageURL: result.secure_url,
             cloudinary_id: result.public_id,
         });
-        await product.save();
+        const productSuccess = await product.save();
 
-        if(product){
+        if(productSuccess){
+            await Analyse.findOneAndUpdate(
+                { userId: product.userId },
+                {
+                    $push: {
+                        products: { productId: product._id, slug: product.pname, price: product.price },
+                        productsTimeline: timeNow
+                    }
+                },
+                { upsert: true }
+            );
+
             res.status(200).send({
                 success: true,
                 userId: product.userId,
@@ -47,7 +60,7 @@ router.post("/product/add", upload.single("image"), async (req, res) => {
 });
 
 
-router.get("/product/all/:userId", async (req, res) => {
+router.get("/all/:userId", async (req, res) => {
     // const { pageNumber, pageSize } = req.body;
     const {userId} = req.params;
     try {
@@ -71,7 +84,7 @@ router.get("/product/all/:userId", async (req, res) => {
 })
 
 
-router.get("/product/search/:userId", async (req, res) => {
+router.get("/search/:userId", async (req, res) => {
     try {
         const { userId } = req.params; 
         const { name } = req.query;
@@ -86,4 +99,20 @@ router.get("/product/search/:userId", async (req, res) => {
         return res.status(500).json("Server Error While Searching Products");
     }
 })
+
+router.delete("/delete/:productId", async (req, res) => {
+    try {
+        const { productId } = req.params; 
+        const result = await Product.findOneAndDelete({ _id: productId });
+
+        if (result) {
+            return res.status(200).json({success: true, message: "Product deleted successfully" });
+        } else {
+            return res.status(400).json({ message: "Product not found" });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json("Server Error While Deleting Product");
+    }
+});
 module.exports = router;

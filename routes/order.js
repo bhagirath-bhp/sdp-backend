@@ -1,7 +1,12 @@
 const router = require("express").Router();
 const Order = require("../models/order");
+const Analyse = require("../models/analyse");
+const DailyCount = require("../models/dailyCount");
+
 
 router.post("/add", async (req, res) => {
+  const timeNow = new Date();
+  const today = new Date().toLocaleDateString();
   try {
     // const { bname, clientId, userId, productSet} = req.body;
     const { bname, products, userId, totalAmount } = req.body;
@@ -15,7 +20,12 @@ router.post("/add", async (req, res) => {
     //   clientId: clientId,
     //   userId: userId,
     //   productSet: productSet,
-    // });
+    // }); 
+
+    products.forEach((product) => {
+      console.log(product)
+    })
+
     const order = new Order({
       bname: bname,
       userId: userId,
@@ -23,9 +33,23 @@ router.post("/add", async (req, res) => {
       totalAmount: totalAmount
     });
 
-    await order.save(); // Save the order to the database
+    const orderSuccess = await order.save();
 
-    return res.status(200).json({ message: "Order added successfully", success: true });
+    if (orderSuccess) {
+      await Analyse.findOneAndUpdate(
+        { userId: order.userId },
+        {
+          $push: {
+            orders: { orderId: order._id, slug: order.bname, amount: order.totalAmount },
+            ordersTimeline: timeNow
+          }
+        },
+        { upsert: true }
+      );
+      return res.status(200).json({ message: "Order added successfully", success: true });
+    }
+
+
   } catch (error) {
     console.error("Error adding task:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -36,7 +60,7 @@ router.post("/add", async (req, res) => {
 
 router.get("/all/:userId", async (req, res) => {
   try {
-    const {userId} = req.params;
+    const { userId } = req.params;
     let orderFrame = await Order.find({ userId: userId })
     // .skip((pageNumber - 1) * pageSize)
     // .limit(pageSize)
