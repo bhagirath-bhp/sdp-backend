@@ -3,11 +3,16 @@ const cloudinary = require("../utils/cloudinary");
 const upload = require("../utils/multer");
 const Product = require("../models/product");
 const Analyse = require("../models/analyse");
+const DailyCount = require("../models/dailyCount");
 const cookieToken = require("../utils/cookieToken");
 
 router.post("/add", upload.single("image"), async (req, res) => {
-    const timeNow = new Date()
-    console.log(req.body)
+    const timeNow = new Date();
+    const today = timeNow.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+    });    console.log(req.body)
     try {
         if (!req.file || req.userId || !req.body.pname || !req.body.price || !req.body.producer  || !req.body.quantity) {
             return res.status(400).json({ message: "Incomplete Data" });
@@ -27,18 +32,33 @@ router.post("/add", upload.single("image"), async (req, res) => {
         });
         const productSuccess = await product.save();
 
-        if(productSuccess){
-            await Analyse.findOneAndUpdate(
-                { userId: product.userId },
-                {
-                    $push: {
-                        products: { productId: product._id, slug: product.pname, price: product.price },
-                        productsTimeline: timeNow
-                    }
-                },
-                { upsert: true }
-            );
-
+        if (productSuccess) {
+            const existingDailyCount = await DailyCount.findOne({ userId: product.userId });
+      
+            if (existingDailyCount) {
+              const lastEntryDate = existingDailyCount.productsCountTimeline.slice(-1)[0];
+      
+              if (lastEntryDate === today) {
+                await DailyCount.findOneAndUpdate(
+                  { userId: product.userId },
+                  { $inc: { "productsCount.$[lastElement]": 1 } },
+                  { arrayFilters: [{ "lastElement": { $exists: true } }] }
+                );
+              } else {
+                await DailyCount.findOneAndUpdate(
+                  { userId: product.userId },
+                  { $push: { productsCount: 1, productsCountTimeline: today } }
+                );
+              }
+            } else {
+              const newDailyCount = new DailyCount({
+                userId: product.userId,
+                productsCount: [1],
+                productsCountTimeline: [today]
+              });
+              await newDailyCount.save();
+            }
+      
             res.status(200).send({
                 success: true,
                 userId: product.userId,
@@ -49,7 +69,7 @@ router.post("/add", upload.single("image"), async (req, res) => {
                 lastUpdated: product.lastUpdated,
                 imageURL: product.imageURL,
             })
-        }
+          }
         else{
             res.status(400).send({message: "Something went wrong"})
         }

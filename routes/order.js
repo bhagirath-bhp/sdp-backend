@@ -6,7 +6,11 @@ const DailyCount = require("../models/dailyCount");
 
 router.post("/add", async (req, res) => {
   const timeNow = new Date();
-  const today = new Date().toLocaleDateString();
+  const today = timeNow.toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+  });
   try {
     // const { bname, clientId, userId, productSet} = req.body;
     const { bname, products, userId, totalAmount } = req.body;
@@ -36,19 +40,34 @@ router.post("/add", async (req, res) => {
     const orderSuccess = await order.save();
 
     if (orderSuccess) {
-      await Analyse.findOneAndUpdate(
-        { userId: order.userId },
-        {
-          $push: {
-            orders: { orderId: order._id, slug: order.bname, amount: order.totalAmount },
-            ordersTimeline: timeNow
-          }
-        },
-        { upsert: true }
-      );
+      const existingDailyCount = await DailyCount.findOne({ userId: order.userId });
+
+      if (existingDailyCount) {
+        const lastEntryDate = existingDailyCount.ordersCountTimeline.slice(-1)[0];
+
+        if (lastEntryDate === today) {
+          await DailyCount.findOneAndUpdate(
+            { userId: order.userId },
+            { $inc: { "ordersCount.$[lastElement]": order.totalAmount } },
+            { arrayFilters: [{ "lastElement": { $exists: true } }] }
+          );
+        } else {
+          await DailyCount.findOneAndUpdate(
+            { userId: order.userId },
+            { $push: { ordersCount: 1, ordersCountTimeline: today } }
+          );
+        }
+      } else {
+        const newDailyCount = new DailyCount({
+          userId: order.userId,
+          ordersCount: [1],
+          ordersCountTimeline: [today]
+        });
+        await newDailyCount.save();
+      }
+
       return res.status(200).json({ message: "Order added successfully", success: true });
     }
-
 
   } catch (error) {
     console.error("Error adding task:", error);

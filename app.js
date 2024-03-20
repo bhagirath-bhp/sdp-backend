@@ -10,6 +10,7 @@ const clientRoutes = require("./routes/client");
 const productRoutes = require("./routes/product")
 const taskRoutes = require("./routes/task");
 const orderRoutes = require("./routes/order");
+const dailyCountRoutes = require("./routes/dailyCount");
 const { isLoggedIn } = require('./routes/auth');
 
 
@@ -38,6 +39,7 @@ app.use('/api/client', isLoggedIn, clientRoutes);
 app.use('/api/product', isLoggedIn, productRoutes);
 app.use('/api/task', isLoggedIn, taskRoutes);
 app.use('/api/order', isLoggedIn, orderRoutes);
+app.use('/api/dailycount', isLoggedIn, dailyCountRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

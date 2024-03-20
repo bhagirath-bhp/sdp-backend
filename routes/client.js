@@ -7,7 +7,12 @@ const router = require("express").Router();
 
 router.post("/add", async (req, res) => {
     const timeNow = new Date();
-    const today = new Date().toLocaleDateString();
+    const today = timeNow.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric',
+    });
+
     try {
         if (!req.body.userId || !req.body.fname || !req.body.lname || !req.body.email || !req.body.phone || !req.body.verified) {
             return res.status(400).json({ message: "Incomplete Data" });
@@ -28,21 +33,31 @@ router.post("/add", async (req, res) => {
         });
         const clientSuccess = await client.save();
         if (clientSuccess) {
-            await Analyse.findOneAndUpdate(
-                { userId: client.userId },
-                {
-                    $push: {
-                        clients: { clientId: client._id, slug: client.fname },
-                        clientsTimeline: timeNow
-                    }
-                },
-                { upsert: true }
-            );
-            await DailyCount.findOneAndUpdate(
-                { date: today },
-                { $inc: { clientsCount: 1 } }, // Increment clientsCount by 1
-                { upsert: true }
-            );
+            const existingDailyCount = await DailyCount.findOne({ userId: client.userId });
+
+            if (existingDailyCount) {
+                const lastEntryDate = existingDailyCount.clientsCountTimeline.slice(-1)[0];
+
+                if (lastEntryDate === today) {
+                    await DailyCount.findOneAndUpdate(
+                        { userId: client.userId },
+                        { $inc: { "clientsCount.$[lastElement]": 1 } },
+                        { arrayFilters: [{ "lastElement": { $exists: true } }] }
+                    );
+                } else {
+                    await DailyCount.findOneAndUpdate(
+                        { userId: client.userId },
+                        { $push: { clientsCount: 1, clientsCountTimeline: today } }
+                    );
+                }
+            } else {
+                const newDailyCount = new DailyCount({
+                    userId: client.userId,
+                    clientsCount: [1],
+                    clientsCountTimeline: [today]
+                });
+                await newDailyCount.save();
+            }
 
             return res.status(200).json({
                 success: true,
@@ -53,13 +68,20 @@ router.post("/add", async (req, res) => {
                 phone: client.phone,
                 createdAt: client.createdAt,
                 verified: client.verified,
-            })
+            });
         }
+
+
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Internal server error" });
     }
 });
+
+
+
+
 router.get("/all/:userId", async (req, res) => {
     // const { pageNumber, pageSize } = req.body;
     const { userId } = req.params;
@@ -90,11 +112,11 @@ router.get("/all/:userId", async (req, res) => {
 router.delete("/delete/:clientId", async (req, res) => {
     console.log("client")
     try {
-        const { clientId } = req.params; 
+        const { clientId } = req.params;
         const result = await Client.findOneAndDelete({ _id: clientId });
 
         if (result) {
-            return res.status(200).json({success: true, message: "Client deleted successfully" });
+            return res.status(200).json({ success: true, message: "Client deleted successfully" });
         } else {
             return res.status(404).json({ message: "Client not found" });
         }

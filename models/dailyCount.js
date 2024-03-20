@@ -1,10 +1,13 @@
 const mongoose = require('mongoose');
 
 const dailyCountSchema = new mongoose.Schema({
-    date: { type: Date, default: Date.now },
-    clientsCount: { type: Number, default: 0 },
-    ordersCount: { type: Number, default: 0 },
-    productsCount: { type: Number, default: 0 }
+    userId: String,
+    clientsCount: [Number],
+    ordersCount: [Number],
+    productsCount: [Number],
+    clientsCountTimeline: [String],
+    ordersCountTimeline: [String],
+    productsCountTimeline: [String],
 });
 
 module.exports = mongoose.model("DailyCount", dailyCountSchema);
