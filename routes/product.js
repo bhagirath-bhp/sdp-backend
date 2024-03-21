@@ -14,7 +14,8 @@ router.post("/add", upload.single("image"), async (req, res) => {
       year: 'numeric',
     });    console.log(req.body)
     try {
-        if (!req.file || req.userId || !req.body.pname || !req.body.price || !req.body.producer  || !req.body.quantity) {
+        // if (!req.file || req.userId || !req.body.pname || !req.body.price || !req.body.producer  || !req.body.quantity) {
+        if (req.userId || !req.body.pname || !req.body.price || !req.body.producer  || !req.body.quantity) {
             return res.status(400).json({ message: "Incomplete Data" });
         }
         const result = await cloudinary.uploader.upload(req.file.path);
