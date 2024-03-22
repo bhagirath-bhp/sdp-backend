@@ -14,9 +14,13 @@ const cookieToken = (user,res) => {
         success: true,
         userId: user._id,
         token,
-        name: user.name,
+        companyName: user.companyName,
+        ownerName: user.ownerName,
         email: user.email,
+        phone: user.phone,
+        address: user.address,
         profileURL: user.profileURL,
+        status: user.status,
     })
 }
 
